@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm add:*)",
+      "Bash(npx tailwindcss init:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(pnpm run:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": []
+  }
+}
