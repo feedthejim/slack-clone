@@ -220,13 +220,29 @@ export function PrefetchToggle() {
   const getModeDisplay = (mode) => {
     switch (mode) {
       case PREFETCH_MODES.RUNTIME:
-        return { text: "Runtime", color: "bg-green-500", description: "Immediate prefetch" };
+        return {
+          text: "Runtime",
+          color: "bg-green-500",
+          description: "Immediate prefetch",
+        };
       case PREFETCH_MODES.HOVER:
-        return { text: "On Hover", color: "bg-yellow-500", description: "Prefetch on mouse hover" };
+        return {
+          text: "On Hover",
+          color: "bg-yellow-500",
+          description: "Prefetch on mouse hover",
+        };
       case PREFETCH_MODES.OFF:
-        return { text: "Off", color: "bg-red-500", description: "No prefetching" };
+        return {
+          text: "Off",
+          color: "bg-red-500",
+          description: "No prefetching",
+        };
       default:
-        return { text: "Runtime", color: "bg-green-500", description: "Immediate prefetch" };
+        return {
+          text: "Runtime",
+          color: "bg-green-500",
+          description: "Immediate prefetch",
+        };
     }
   };
 
@@ -242,28 +258,32 @@ export function PrefetchToggle() {
   }
 
   const currentMode = getModeDisplay(prefetchMode);
-  const allModes = Object.values(PREFETCH_MODES).map(mode => ({
+  const allModes = Object.values(PREFETCH_MODES).map((mode) => ({
     value: mode,
-    ...getModeDisplay(mode)
+    ...getModeDisplay(mode),
   }));
 
   return (
     <div className="px-4 py-3 border-t border-gray-200">
-      <div className="text-xs font-medium text-gray-700 mb-2">Prefetch Messages</div>
+      <div className="text-xs font-medium text-gray-700 mb-2">
+        Prefetch Messages
+      </div>
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="w-full flex items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md text-xs hover:bg-gray-50 transition-colors"
         >
           <div className="flex items-center space-x-2">
-            <span className={`w-1.5 h-1.5 rounded-full ${currentMode.color}`}></span>
-            <span className="font-medium text-gray-900">{currentMode.text}</span>
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${currentMode.color}`}
+            ></span>
+            <span className="font-medium text-gray-900">
+              {currentMode.text}
+            </span>
           </div>
-          <span className="text-gray-500">
-            {isOpen ? '▲' : '▼'}
-          </span>
+          <span className="text-gray-500">{isOpen ? "▲" : "▼"}</span>
         </button>
-        
+
         {isOpen && (
           <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-300 rounded-md shadow-lg z-10">
             {allModes.map((mode) => (
@@ -271,13 +291,17 @@ export function PrefetchToggle() {
                 key={mode.value}
                 onClick={() => selectMode(mode.value)}
                 className={`w-full flex items-center space-x-2 px-3 py-2 text-xs hover:bg-gray-50 transition-colors first:rounded-t-md last:rounded-b-md ${
-                  mode.value === prefetchMode ? 'bg-gray-100' : ''
+                  mode.value === prefetchMode ? "bg-gray-100" : ""
                 }`}
               >
-                <span className={`w-1.5 h-1.5 rounded-full ${mode.color}`}></span>
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${mode.color}`}
+                ></span>
                 <div className="flex-1 text-left">
                   <div className="font-medium text-gray-900">{mode.text}</div>
-                  <div className="text-gray-600 text-xs">{mode.description}</div>
+                  <div className="text-gray-600 text-xs">
+                    {mode.description}
+                  </div>
                 </div>
                 {mode.value === prefetchMode && (
                   <span className="text-green-600 text-xs">✓</span>
@@ -338,9 +362,7 @@ function ChannelLink({ channel, prefetchMode, isActive, getModeDisplay }) {
 
   const handleMouseEnter = () => {
     if (prefetchMode === PREFETCH_MODES.HOVER && !isPrefetched) {
-      router.prefetch(`/channel/${channel.id}`, {
-        prefetch: PrefetchKind.FULL,
-      });
+      router.prefetch(`/channel/${channel.id}`);
       setIsPrefetched(true);
     }
   };
@@ -425,8 +447,8 @@ function DemoDisclaimer() {
           <span className="font-medium text-gray-700">Demo Info</span>
         </div>
         <p className="text-gray-600 leading-relaxed">
-          This demo showcases <strong>PPR</strong> with Cache Components. 
-          Only <strong>chat messages</strong> are dynamic - other content is cached 
+          This demo showcases <strong>PPR</strong> with Cache Components. Only{" "}
+          <strong>chat messages</strong> are dynamic - other content is cached
           for optimal performance with partial prerendering.
         </p>
       </div>
