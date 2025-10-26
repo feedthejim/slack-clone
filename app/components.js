@@ -372,7 +372,6 @@ function ChannelLink({ channel, prefetchMode, isActive, getModeDisplay }) {
       case PREFETCH_MODES.RUNTIME:
         return { prefetch: true };
       case PREFETCH_MODES.HOVER:
-        return { prefetch: "unstable_forceStale" };
       case PREFETCH_MODES.OFF:
       default:
         return {};
