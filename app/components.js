@@ -448,7 +448,8 @@ function DemoDisclaimer() {
         <p className="text-gray-600 leading-relaxed">
           This demo showcases <strong>PPR</strong> with Cache Components. Only{" "}
           <strong>chat messages</strong> are dynamic - other content is cached
-          for optimal performance with partial prerendering.
+          for optimal performance with partial prerendering. All data is fetched
+          with <strong>Server Components</strong> preloading and <strong>TanStack Query</strong>.
         </p>
       </div>
     </div>
