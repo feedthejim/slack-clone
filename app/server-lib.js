@@ -55,7 +55,6 @@ export async function getChannels() {
 }
 
 export async function getChannelById(channelId) {
-  "use cache";
   await new Promise((resolve) => setTimeout(resolve, 2000));
   return mockChannelsById[channelId] || null;
 }

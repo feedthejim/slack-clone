@@ -1,9 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  cacheComponents: true,
   experimental: {
-    cacheComponents: true,
-    clientSegmentCache: true,
-    routerBFCache: true,
+    turbopackFileSystemCacheForDev: true,
   },
 };
 

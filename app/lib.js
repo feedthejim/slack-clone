@@ -38,6 +38,14 @@ const mockChannelsClient = [
   { id: '5', name: 'marketing', isPrivate: true },
 ];
 
+const mockChannelsById = {
+  '1': { id: '1', name: 'general', isPrivate: false },
+  '2': { id: '2', name: 'random', isPrivate: false },
+  '3': { id: '3', name: 'dev-team', isPrivate: true },
+  '4': { id: '4', name: 'design', isPrivate: false },
+  '5': { id: '5', name: 'marketing', isPrivate: true },
+};
+
 const mockUser = {
   id: '1',
   name: 'John Doe',
