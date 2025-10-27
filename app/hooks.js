@@ -76,7 +76,8 @@ let recentMessagesGlobal = [];
 const recentMessagesSubscribers = new Set();
 
 // Global state for visited channels (to track read status)
-let visitedChannelsGlobal = new Set();
+// Store channel visit timestamps instead of just boolean
+let visitedChannelsGlobal = new Map(); // channelId -> timestamp
 const visitedChannelsSubscribers = new Set();
 
 // Global state for message injection progress
@@ -103,8 +104,8 @@ function subscribeToVisitedChannels(callback) {
 
 // Mark channel as visited (clears unread status)
 function markChannelAsVisited(channelId) {
-  visitedChannelsGlobal.add(channelId);
-  visitedChannelsSubscribers.forEach(callback => callback(new Set(visitedChannelsGlobal)));
+  visitedChannelsGlobal.set(channelId, Date.now());
+  visitedChannelsSubscribers.forEach(callback => callback(new Map(visitedChannelsGlobal)));
 }
 
 // Subscribe to progress updates
@@ -169,22 +170,24 @@ export function useChannelNewMessages(channelId) {
     return false;
   }
   
-  // Don't show indicator if channel has been visited and has no new messages since visit
-  if (visitedChannels.has(channelId)) {
-    // Find the most recent message for this channel
-    const channelMessages = recentMessages.filter(msg => msg.channelId === channelId);
-    if (channelMessages.length === 0) {
-      return false;
-    }
-    
-    // For now, we'll assume that once visited, the indicator is cleared
-    // In a real app, you'd compare message timestamps with visit timestamps
+  // Check if this channel has messages in recent messages
+  const channelMessages = recentMessages.filter(msg => msg.channelId === channelId);
+  if (channelMessages.length === 0) {
     return false;
   }
   
-  // Check if this channel has messages in recent messages
-  const hasRecentMessage = recentMessages.some(msg => msg.channelId === channelId);
-  return hasRecentMessage;
+  // If channel has never been visited, show indicator
+  if (!visitedChannels.has(channelId)) {
+    return true;
+  }
+  
+  // If channel has been visited, check if there are messages newer than the visit time
+  const lastVisitTime = visitedChannels.get(channelId);
+  const hasNewerMessages = channelMessages.some(msg => 
+    new Date(msg.timestamp).getTime() > lastVisitTime
+  );
+  
+  return hasNewerMessages;
 }
 
 // Hook to get message injection progress
