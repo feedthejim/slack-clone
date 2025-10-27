@@ -46,20 +46,15 @@ export default function ChannelPage({ params }) {
   return <ChatInterface params={params} />;
 }
 
-// Channel Header Component with params validation
+// Channel Header Component
 async function ChannelHeaderWithParams({ params }) {
+  "use cache";
   const { channelId } = await params;
 
   if (!validChannelIds.includes(channelId)) {
     redirect("/channel/1");
   }
 
-  return <ChannelHeader channelId={channelId} />;
-}
-
-// Channel Header Component
-async function ChannelHeader({ channelId }) {
-  "use cache";
   const channel = await getChannelById(channelId);
 
   if (!channel) {
@@ -113,20 +108,15 @@ function ChatInterface({ params }) {
   );
 }
 
-// Messages component wrapper that handles params
+// Messages component that handles params and data
 async function MessageListWithParams({ params }) {
+  "use cache";
   const { channelId } = await params;
 
   if (!validChannelIds.includes(channelId)) {
     redirect("/channel/1");
   }
 
-  return <MessageListWithData channelId={channelId} />;
-}
-
-// Messages component that prefetches and reads user data
-async function MessageListWithData({ channelId }) {
-  "use cache";
   const queryClient = getQueryClient();
 
   // Prefetch messages data - no await needed
@@ -142,7 +132,7 @@ async function MessageListWithData({ channelId }) {
   );
 }
 
-// Message input component wrapper that handles params
+// Message input component that handles params
 async function MessageInputWithParams({ params }) {
   const { channelId } = await params;
 
@@ -150,11 +140,6 @@ async function MessageInputWithParams({ params }) {
     redirect("/channel/1");
   }
 
-  return <MessageInputWithData channelId={channelId} />;
-}
-
-// Message input component that reads user data
-async function MessageInputWithData({ channelId }) {
   return <MessageInput channelId={channelId} />;
 }
 
