@@ -81,6 +81,37 @@ let globalProgressTimer = null;
 let isGlobalInjectionActive = false;
 const availableChannels = ['1', '2', '3', '4', '5'];
 
+// Store injected messages before server data loads to prevent race conditions
+const pendingInjectedMessages = new Map(); // channelId -> Message[]
+
+// Unified function to safely add messages to cache with race condition handling
+function safelyAddMessageToCache(queryClient, channelId, newMessage) {
+  queryClient.setQueryData(queryKeys.messages(channelId), (old) => {
+    // If no server data yet, store in pending and return just the new message
+    if (!old) {
+      if (!pendingInjectedMessages.has(channelId)) {
+        pendingInjectedMessages.set(channelId, []);
+      }
+      pendingInjectedMessages.get(channelId).push(newMessage);
+      return [newMessage];
+    }
+    
+    // If we have server data, merge any pending messages and add the new one
+    const pending = pendingInjectedMessages.get(channelId) || [];
+    pendingInjectedMessages.delete(channelId); // Clear pending since we're merging
+    
+    // Combine server data + pending + new message, sort by timestamp, remove duplicates
+    const allMessages = [...old, ...pending, newMessage];
+    const uniqueMessages = allMessages.filter((msg, index, arr) => 
+      arr.findIndex(m => m.id === msg.id) === index
+    );
+    
+    return uniqueMessages.sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+  });
+}
+
 // Subscribe to recent messages updates
 function subscribeToRecentMessages(callback) {
   recentMessagesSubscribers.add(callback);
@@ -204,11 +235,8 @@ function startGlobalMessageInjection(queryClient) {
     const randomChannelId = availableChannels[Math.floor(Math.random() * availableChannels.length)];
     const fakeMessage = generateFakeMessage(randomChannelId);
     
-    // Update the messages cache for the selected channel
-    queryClient.setQueryData(queryKeys.messages(randomChannelId), (old) => {
-      if (!old) return [fakeMessage];
-      return [...old, fakeMessage];
-    });
+    // Use unified function to safely add message to cache
+    safelyAddMessageToCache(queryClient, randomChannelId, fakeMessage);
     
     // Add to recent messages global state
     addToRecentMessages(fakeMessage, randomChannelId);
@@ -294,11 +322,8 @@ export function useSendMessage(channelId) {
   return useMutation({
     mutationFn: (message) => mockApi.sendMessage(channelId, message),
     onSuccess: (newMessage) => {
-      // Update the messages cache
-      queryClient.setQueryData(queryKeys.messages(channelId), (old) => {
-        if (!old) return [newMessage];
-        return [...old, newMessage];
-      });
+      // Use unified function to safely add message to cache
+      safelyAddMessageToCache(queryClient, channelId, newMessage);
       
       // Add to recent messages global state
       addToRecentMessages(newMessage, channelId);
