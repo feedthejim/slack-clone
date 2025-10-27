@@ -1,20 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import { useParams } from "next/navigation";
-import { useMessages, useSendMessage, useChannels, useGlobalMessageInjection, useChannelNewMessages, markChannelAsVisitedAction, useRecentMessages } from "./hooks";
+import {
+  useMessages,
+  useSendMessage,
+  useChannels,
+  useGlobalMessageInjection,
+  useChannelNewMessages,
+  markChannelAsVisitedAction,
+  useRecentMessages,
+  useCurrentUser,
+} from "./hooks";
 import { logoutAction } from "./actions";
 
-
-// Message List Component using React Query
-export function MessageList({ channelId }) {
+// Message List Component using React Query with Optimistic Updates
+export function MessageList({ channelId, optimisticMessages }) {
   const { data: messages = [] } = useMessages(channelId);
+  
+  // Combine server messages with optimistic messages
+  const allMessages = [...messages, ...optimisticMessages];
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 flex flex-col justify-end">
+    <div className="flex-1 overflow-y-auto p-6 flex flex-col justify-end min-h-0">
       <div className="space-y-6 min-h-full flex flex-col justify-end">
-        {messages.map((message) => (
+        {allMessages.map((message) => (
           <div key={message.id} className="flex space-x-3">
             <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-sm font-medium text-white">
               {message.user
@@ -29,7 +40,13 @@ export function MessageList({ channelId }) {
                   {new Date(message.timestamp).toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-gray-900 leading-relaxed">{message.text}</p>
+              <p
+                className={`leading-relaxed ${
+                  message.isPending ? "text-gray-500" : "text-gray-900"
+                }`}
+              >
+                {message.text}
+              </p>
             </div>
           </div>
         ))}
@@ -38,20 +55,53 @@ export function MessageList({ channelId }) {
   );
 }
 
-// Message Input Component
-export function MessageInput({ channelId }) {
-  const [message, setMessage] = useState("");
+// Message Container Component with Optimistic Updates
+export function MessageContainer({ channelId }) {
+  const currentUser = useCurrentUser();
   const sendMessageMutation = useSendMessage(channelId);
+  const [isPending, startTransition] = useTransition();
+  const [optimisticMessages, addOptimisticMessage] = useOptimistic(
+    [],
+    (state, newMessage) => [...state, newMessage]
+  );
+
+  const sendMessage = async (text) => {
+    const optimisticMessage = {
+      id: `optimistic-${Date.now()}`,
+      text,
+      user: currentUser.name,
+      timestamp: new Date().toISOString(),
+      isPending: true,
+    };
+
+    startTransition(async () => {
+      addOptimisticMessage(optimisticMessage);
+      
+      try {
+        await sendMessageMutation.mutateAsync(text);
+      } catch (error) {
+        console.error('Failed to send message:', error);
+      }
+    });
+  };
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0">
+      <MessageList channelId={channelId} optimisticMessages={optimisticMessages} />
+      <MessageInput channelId={channelId} onSendMessage={sendMessage} isPending={isPending} />
+    </div>
+  );
+}
+
+// Message Input Component
+export function MessageInput({ channelId, onSendMessage, isPending }) {
+  const [message, setMessage] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (message.trim() && channelId) {
-      try {
-        await sendMessageMutation.mutateAsync(message.trim());
-        setMessage("");
-      } catch (error) {
-        // Error is handled by the mutation
-      }
+      onSendMessage(message.trim());
+      setMessage("");
     }
   };
 
@@ -64,14 +114,14 @@ export function MessageInput({ channelId }) {
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type a message..."
           className="flex-1 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-colors text-sm"
-          disabled={sendMessageMutation.isPending}
+          disabled={isPending}
         />
         <button
           type="submit"
-          disabled={!message.trim() || sendMessageMutation.isPending}
+          disabled={!message.trim() || isPending}
           className="px-4 py-3 bg-black text-white rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
         >
-          {sendMessageMutation.isPending ? "Sending..." : "Send"}
+          {isPending ? "Sending..." : "Send"}
         </button>
       </form>
     </div>
@@ -103,7 +153,22 @@ export function MessageListSkeleton() {
   );
 }
 
-
+// Message Container Skeleton Component
+export function MessageContainerSkeleton() {
+  return (
+    <div className="flex-1 flex flex-col min-h-0">
+      <MessageListSkeleton />
+      <div className="border-t border-gray-200 p-6">
+        <div className="flex space-x-3">
+          <div className="flex-1">
+            <div className="w-full h-12 bg-gray-200 rounded-md animate-pulse"></div>
+          </div>
+          <div className="w-16 h-12 bg-gray-200 rounded-md animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Channel List Component with ordering by latest messages
 export function ChannelList() {
@@ -113,7 +178,9 @@ export function ChannelList() {
 
   // Get latest message timestamp for each channel
   const getChannelLastActivity = (channelId) => {
-    const channelMessage = recentMessages.find(msg => msg.channelId === channelId);
+    const channelMessage = recentMessages.find(
+      (msg) => msg.channelId === channelId
+    );
     return channelMessage ? new Date(channelMessage.timestamp).getTime() : 0;
   };
 
@@ -146,12 +213,12 @@ export function ChannelList() {
 // Individual Channel Link Component
 function ChannelLink({ channel, isActive }) {
   const hasNewMessages = useChannelNewMessages(channel.id);
-  
+
   const handleClick = () => {
     // Mark channel as read when clicked
     markChannelAsVisitedAction(channel.id);
   };
-  
+
   return (
     <Link
       href={`/channel/${channel.id}`}
@@ -172,31 +239,6 @@ function ChannelLink({ channel, isActive }) {
   );
 }
 
-// Logout Button Component
-function LogoutButton({ user }) {
-  return (
-    <div className="p-4 border-t border-gray-200">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3 flex-1">
-          <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-sm font-medium text-white">
-            {user?.name
-              ?.split(" ")
-              .map((n) => n[0])
-              .join("") || "U"}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium truncate text-black">
-              {user?.name || "User"}
-            </div>
-            <div className="text-xs text-gray-500">Active</div>
-          </div>
-        </div>
-        <LogoutForm />
-      </div>
-    </div>
-  );
-}
-
 // Logout Form Component using Server Action
 function LogoutForm() {
   return (
@@ -212,37 +254,10 @@ function LogoutForm() {
   );
 }
 
-
-
-// Demo Disclaimer Component
-function DemoDisclaimer() {
-  return (
-    <div className="px-4 py-3 border-t border-gray-200">
-      <div className="text-xs text-gray-600 bg-gray-50 rounded-md p-2">
-        <div className="flex items-center space-x-2 mb-1">
-          <span className="text-blue-500">ⓘ</span>
-          <span className="font-medium text-gray-700">Architecture Overview</span>
-        </div>
-        <p className="text-gray-600 leading-relaxed mb-2">
-          This demo showcases <strong>PPR</strong> with Cache Components and{" "}
-          <strong>hybrid data architecture</strong>. Initial data (channels, messages, user)
-          is seeded by <strong>Server Components</strong> using <code>prefetchQuery</code>,
-          then hydrated to <strong>TanStack Query</strong> for client-side state management.
-        </p>
-        <p className="text-gray-600 leading-relaxed">
-          <strong>Real-time simulation</strong> injects messages every 5-15 seconds,
-          updating React Query cache directly for instant UI updates and optimistic UX.
-          This combines server-side performance with client-side reactivity.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 // Sidebar Component - now only renders dynamic content
 export function Sidebar({ user }) {
   return (
-    <div className="flex-1 p-2">
+    <div className="flex-1 p-2 min-h-0 overflow-y-auto">
       <ChannelList />
     </div>
   );

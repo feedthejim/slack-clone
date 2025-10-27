@@ -1,14 +1,18 @@
 "use client";
 
-import { useSuspenseQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { mockApi } from './lib';
+import {
+  useSuspenseQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
+import { mockApi } from "./lib";
 
 // Query keys
 export const queryKeys = {
-  channels: ['channels'],
-  messages: (channelId) => ['messages', channelId],
+  channels: ["channels"],
+  messages: (channelId) => ["messages", channelId],
 };
 
 // Channels query
@@ -19,10 +23,19 @@ export function useChannels() {
   });
 }
 
+// Current user hook
+export function useCurrentUser() {
+  return {
+    id: "1",
+    name: "John Doe",
+    email: "john@example.com",
+  };
+}
+
 // Messages query
 export function useMessages(channelId) {
   const queryClient = useQueryClient();
-  
+
   return useSuspenseQuery({
     queryKey: queryKeys.messages(channelId),
     queryFn: () => mockApi.getMessages(channelId),
@@ -31,47 +44,66 @@ export function useMessages(channelId) {
       const pending = pendingInjectedMessages.get(channelId) || [];
       if (pending.length > 0) {
         pendingInjectedMessages.delete(channelId); // Clear pending since we're merging
-        
+
         const allMessages = [...data, ...pending];
-        const uniqueMessages = allMessages.filter((msg, index, arr) => 
-          arr.findIndex(m => m.id === msg.id) === index
+        const uniqueMessages = allMessages.filter(
+          (msg, index, arr) => arr.findIndex((m) => m.id === msg.id) === index
         );
-        
-        return uniqueMessages.sort((a, b) => 
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+
+        return uniqueMessages.sort(
+          (a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
       }
       return data;
-    }
+    },
   });
 }
 
-
 // Fake message generation data
 const fakeUsers = [
-  'Alex Turner', 'Emma Watson', 'Ryan Gosling', 'Sophie Chen', 
-  'Marcus Johnson', 'Lisa Park', 'David Kim', 'Rachel Green',
-  'Chris Evans', 'Maya Patel', 'Jordan Smith', 'Nina Rodriguez'
+  "Alex Turner",
+  "Emma Watson",
+  "Ryan Gosling",
+  "Sophie Chen",
+  "Marcus Johnson",
+  "Lisa Park",
+  "David Kim",
+  "Rachel Green",
+  "Chris Evans",
+  "Maya Patel",
+  "Jordan Smith",
+  "Nina Rodriguez",
 ];
 
 const fakeMessages = [
-  'Anyone up for lunch today?', 'Great work on the presentation!',
-  'Just finished the quarterly review', 'The new design looks fantastic',
-  'Has anyone seen the latest analytics?', 'Coffee break in 10 minutes?',
-  'I love the new feature we shipped', 'The client meeting went really well',
-  'Working on the bug fixes now', 'The team sync was productive',
-  'Just deployed the hotfix', 'Thanks for the quick turnaround',
-  'The performance improvements are noticeable', 'Great job everyone!',
-  'Weekend plans anyone?', 'The documentation is very helpful',
-  'Just merged the PR', 'The tests are all passing now',
-  'Really excited about this project', 'The user feedback has been positive'
+  "Anyone up for lunch today?",
+  "Great work on the presentation!",
+  "Just finished the quarterly review",
+  "The new design looks fantastic",
+  "Has anyone seen the latest analytics?",
+  "Coffee break in 10 minutes?",
+  "I love the new feature we shipped",
+  "The client meeting went really well",
+  "Working on the bug fixes now",
+  "The team sync was productive",
+  "Just deployed the hotfix",
+  "Thanks for the quick turnaround",
+  "The performance improvements are noticeable",
+  "Great job everyone!",
+  "Weekend plans anyone?",
+  "The documentation is very helpful",
+  "Just merged the PR",
+  "The tests are all passing now",
+  "Really excited about this project",
+  "The user feedback has been positive",
 ];
 
 // Generate a realistic fake message
 function generateFakeMessage(channelId) {
   const user = fakeUsers[Math.floor(Math.random() * fakeUsers.length)];
   const text = fakeMessages[Math.floor(Math.random() * fakeMessages.length)];
-  
+
   return {
     id: `fake-${Date.now()}-${Math.random()}`,
     text,
@@ -79,7 +111,6 @@ function generateFakeMessage(channelId) {
     timestamp: new Date().toISOString(),
   };
 }
-
 
 // Global state for recent messages across all channels
 let recentMessagesGlobal = [];
@@ -91,14 +122,18 @@ let visitedChannelsGlobal = new Map(); // channelId -> timestamp
 const visitedChannelsSubscribers = new Set();
 
 // Global state for message injection progress
-let injectionProgressGlobal = { progress: 0, nextMessageIn: 0, isActive: false };
+let injectionProgressGlobal = {
+  progress: 0,
+  nextMessageIn: 0,
+  isActive: false,
+};
 const progressSubscribers = new Set();
 
 // Global message injection state
 let globalInjectionTimer = null;
 let globalProgressTimer = null;
 let isGlobalInjectionActive = false;
-const availableChannels = ['1', '2', '3', '4', '5'];
+const availableChannels = ["1", "2", "3", "4", "5"];
 
 // Store injected messages before server data loads to prevent race conditions
 const pendingInjectedMessages = new Map(); // channelId -> Message[]
@@ -115,19 +150,20 @@ function safelyAddMessageToCache(queryClient, channelId, newMessage) {
       pendingInjectedMessages.get(channelId).push(newMessage);
       return old; // Return undefined to keep cache empty
     }
-    
+
     // If we have server data, merge any pending messages and add the new one
     const pending = pendingInjectedMessages.get(channelId) || [];
     pendingInjectedMessages.delete(channelId); // Clear pending since we're merging
-    
+
     // Combine server data + pending + new message, sort by timestamp, remove duplicates
     const allMessages = [...old, ...pending, newMessage];
-    const uniqueMessages = allMessages.filter((msg, index, arr) => 
-      arr.findIndex(m => m.id === msg.id) === index
+    const uniqueMessages = allMessages.filter(
+      (msg, index, arr) => arr.findIndex((m) => m.id === msg.id) === index
     );
-    
-    return uniqueMessages.sort((a, b) => 
-      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+
+    return uniqueMessages.sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
   });
 }
@@ -147,7 +183,9 @@ function subscribeToVisitedChannels(callback) {
 // Mark channel as visited (clears unread status)
 function markChannelAsVisited(channelId) {
   visitedChannelsGlobal.set(channelId, Date.now());
-  visitedChannelsSubscribers.forEach(callback => callback(new Map(visitedChannelsGlobal)));
+  visitedChannelsSubscribers.forEach((callback) =>
+    callback(new Map(visitedChannelsGlobal))
+  );
 }
 
 // Subscribe to progress updates
@@ -159,7 +197,9 @@ function subscribeToProgress(callback) {
 // Update progress and notify subscribers
 function updateProgress(progress, nextMessageIn, isActive) {
   injectionProgressGlobal = { progress, nextMessageIn, isActive };
-  progressSubscribers.forEach(callback => callback({ ...injectionProgressGlobal }));
+  progressSubscribers.forEach((callback) =>
+    callback({ ...injectionProgressGlobal })
+  );
 }
 
 // Add message to recent messages and notify subscribers
@@ -168,8 +208,10 @@ function addToRecentMessages(message, channelId) {
   recentMessagesGlobal = [messageWithChannel, ...recentMessagesGlobal]
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
     .slice(0, 10); // Keep only latest 10 messages
-  
-  recentMessagesSubscribers.forEach(callback => callback([...recentMessagesGlobal]));
+
+  recentMessagesSubscribers.forEach((callback) =>
+    callback([...recentMessagesGlobal])
+  );
 }
 
 // Hook to get recent messages across all channels
@@ -206,29 +248,31 @@ export function useChannelNewMessages(channelId) {
   const recentMessages = useRecentMessages();
   const visitedChannels = useVisitedChannels();
   const { channelId: currentChannelId } = useParams();
-  
+
   // Don't show indicator for current channel
   if (currentChannelId === channelId) {
     return false;
   }
-  
+
   // Check if this channel has messages in recent messages
-  const channelMessages = recentMessages.filter(msg => msg.channelId === channelId);
+  const channelMessages = recentMessages.filter(
+    (msg) => msg.channelId === channelId
+  );
   if (channelMessages.length === 0) {
     return false;
   }
-  
+
   // If channel has never been visited, show indicator
   if (!visitedChannels.has(channelId)) {
     return true;
   }
-  
+
   // If channel has been visited, check if there are messages newer than the visit time
   const lastVisitTime = visitedChannels.get(channelId);
-  const hasNewerMessages = channelMessages.some(msg => 
-    new Date(msg.timestamp).getTime() > lastVisitTime
+  const hasNewerMessages = channelMessages.some(
+    (msg) => new Date(msg.timestamp).getTime() > lastVisitTime
   );
-  
+
   return hasNewerMessages;
 }
 
@@ -247,45 +291,49 @@ export function useMessageProgress() {
 // Start global message injection that works across all channels
 function startGlobalMessageInjection(queryClient) {
   if (isGlobalInjectionActive) return;
-  
+
   isGlobalInjectionActive = true;
-  
+
   const injectMessage = () => {
     // Pick a random channel
-    const randomChannelId = availableChannels[Math.floor(Math.random() * availableChannels.length)];
+    const randomChannelId =
+      availableChannels[Math.floor(Math.random() * availableChannels.length)];
     const fakeMessage = generateFakeMessage(randomChannelId);
-    
+
     // Use unified function to safely add message to cache
     safelyAddMessageToCache(queryClient, randomChannelId, fakeMessage);
-    
+
     // Add to recent messages global state
     addToRecentMessages(fakeMessage, randomChannelId);
   };
 
-  // Start injecting messages at random intervals between 5-15 seconds
+  // Start injecting messages at random intervals between 5-10 seconds
   const startInjection = () => {
-    const randomInterval = Math.random() * 10000 + 5000; // 5-15 seconds
+    const randomInterval = Math.random() * 10000 + 5000; // 5-10 seconds
     const startTime = Date.now();
-    
+
     updateProgress(0, Math.round(randomInterval / 1000), true);
-    
+
     // Update progress every 100ms
     const updateProgressInterval = () => {
       globalProgressTimer = setInterval(() => {
         const elapsed = Date.now() - startTime;
         const progress = Math.min((elapsed / randomInterval) * 100, 100);
-        const remaining = Math.max(Math.round((randomInterval - elapsed) / 1000), 0);
-        
+        const remaining = Math.max(
+          Math.round((randomInterval - elapsed) / 1000),
+          0
+        );
+
         updateProgress(progress, remaining, true);
-        
+
         if (progress >= 100) {
           clearInterval(globalProgressTimer);
         }
       }, 100);
     };
-    
+
     updateProgressInterval();
-    
+
     globalInjectionTimer = setTimeout(() => {
       injectMessage();
       if (globalProgressTimer) {
@@ -302,17 +350,17 @@ function startGlobalMessageInjection(queryClient) {
 // Stop global message injection
 function stopGlobalMessageInjection() {
   isGlobalInjectionActive = false;
-  
+
   if (globalInjectionTimer) {
     clearTimeout(globalInjectionTimer);
     globalInjectionTimer = null;
   }
-  
+
   if (globalProgressTimer) {
     clearInterval(globalProgressTimer);
     globalProgressTimer = null;
   }
-  
+
   updateProgress(0, 0, false);
 }
 
@@ -334,7 +382,6 @@ export function useGlobalMessageInjection(enabled = true) {
   }, [enabled, queryClient]);
 }
 
-
 // Send message mutation
 export function useSendMessage(channelId) {
   const queryClient = useQueryClient();
@@ -344,12 +391,12 @@ export function useSendMessage(channelId) {
     onSuccess: (newMessage) => {
       // Use unified function to safely add message to cache
       safelyAddMessageToCache(queryClient, channelId, newMessage);
-      
+
       // Add to recent messages global state
       addToRecentMessages(newMessage, channelId);
     },
     onError: (error) => {
-      console.error('Failed to send message:', error);
+      console.error("Failed to send message:", error);
     },
   });
 }

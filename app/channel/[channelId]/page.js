@@ -5,9 +5,8 @@ import { getChannelById } from "../../server-lib";
 import { getQueryClient } from "../../get-query-client";
 import { mockApi } from "../../lib";
 import {
-  MessageList,
-  MessageInput,
-  MessageListSkeleton,
+  MessageContainer,
+  MessageContainerSkeleton,
 } from "../../components";
 
 const validChannelIds = ["1", "2", "3", "4", "5"];
@@ -95,21 +94,15 @@ function ChatInterface({ params }) {
         <ChannelHeaderWithParams params={params} />
       </Suspense>
 
-      <div className="flex-1 flex flex-col min-h-0">
-        <Suspense fallback={<MessageListSkeleton />}>
-          <MessageListWithParams params={params} />
-        </Suspense>
-      </div>
-
-      <Suspense fallback={<MessageInputSkeleton />}>
-        <MessageInputWithParams params={params} />
+      <Suspense fallback={<MessageContainerSkeleton />}>
+        <MessageContainerWithParams params={params} />
       </Suspense>
     </div>
   );
 }
 
-// Messages component that handles params and data
-async function MessageListWithParams({ params }) {
+// Message container component that handles params and data
+async function MessageContainerWithParams({ params }) {
   "use cache";
   const { channelId } = await params;
 
@@ -127,20 +120,9 @@ async function MessageListWithParams({ params }) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <MessageList channelId={channelId} />
+      <MessageContainer channelId={channelId} />
     </HydrationBoundary>
   );
-}
-
-// Message input component that handles params
-async function MessageInputWithParams({ params }) {
-  const { channelId } = await params;
-
-  if (!validChannelIds.includes(channelId)) {
-    redirect("/channel/1");
-  }
-
-  return <MessageInput channelId={channelId} />;
 }
 
 export const unstable_prefetch = {
