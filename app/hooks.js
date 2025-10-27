@@ -75,6 +75,10 @@ function generateFakeMessage(channelId) {
 let recentMessagesGlobal = [];
 const recentMessagesSubscribers = new Set();
 
+// Global state for visited channels (to track read status)
+let visitedChannelsGlobal = new Set();
+const visitedChannelsSubscribers = new Set();
+
 // Global state for message injection progress
 let injectionProgressGlobal = { progress: 0, nextMessageIn: 0, isActive: false };
 const progressSubscribers = new Set();
@@ -89,6 +93,18 @@ const availableChannels = ['1', '2', '3', '4', '5'];
 function subscribeToRecentMessages(callback) {
   recentMessagesSubscribers.add(callback);
   return () => recentMessagesSubscribers.delete(callback);
+}
+
+// Subscribe to visited channels updates
+function subscribeToVisitedChannels(callback) {
+  visitedChannelsSubscribers.add(callback);
+  return () => visitedChannelsSubscribers.delete(callback);
+}
+
+// Mark channel as visited (clears unread status)
+function markChannelAsVisited(channelId) {
+  visitedChannelsGlobal.add(channelId);
+  visitedChannelsSubscribers.forEach(callback => callback(new Set(visitedChannelsGlobal)));
 }
 
 // Subscribe to progress updates
@@ -125,13 +141,44 @@ export function useRecentMessages() {
   return recentMessages;
 }
 
+// Hook to track visited channels
+export function useVisitedChannels() {
+  const [visitedChannels, setVisitedChannels] = useState(visitedChannelsGlobal);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToVisitedChannels(setVisitedChannels);
+    return unsubscribe;
+  }, []);
+
+  return visitedChannels;
+}
+
+// Function to mark channel as visited (for use in click handlers)
+export function markChannelAsVisitedAction(channelId) {
+  markChannelAsVisited(channelId);
+}
+
 // Hook to check if channel has new messages since last visit
 export function useChannelNewMessages(channelId) {
   const recentMessages = useRecentMessages();
+  const visitedChannels = useVisitedChannels();
   const { channelId: currentChannelId } = useParams();
   
   // Don't show indicator for current channel
   if (currentChannelId === channelId) {
+    return false;
+  }
+  
+  // Don't show indicator if channel has been visited and has no new messages since visit
+  if (visitedChannels.has(channelId)) {
+    // Find the most recent message for this channel
+    const channelMessages = recentMessages.filter(msg => msg.channelId === channelId);
+    if (channelMessages.length === 0) {
+      return false;
+    }
+    
+    // For now, we'll assume that once visited, the indicator is cleared
+    // In a real app, you'd compare message timestamps with visit timestamps
     return false;
   }
   

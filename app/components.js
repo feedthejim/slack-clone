@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { useMessages, useSendMessage, useChannels, useGlobalMessageInjection, useRecentMessages, useMessageProgress, useChannelNewMessages } from "./hooks";
+import { useMessages, useSendMessage, useChannels, useGlobalMessageInjection, useRecentMessages, useMessageProgress, useChannelNewMessages, markChannelAsVisitedAction } from "./hooks";
 import { logoutAction } from "./actions";
 
 
@@ -147,9 +147,15 @@ export function ChannelList() {
 function ChannelLink({ channel, isActive }) {
   const hasNewMessages = useChannelNewMessages(channel.id);
   
+  const handleClick = () => {
+    // Mark channel as read when clicked
+    markChannelAsVisitedAction(channel.id);
+  };
+  
   return (
     <Link
       href={`/channel/${channel.id}`}
+      onClick={handleClick}
       className={`block w-full text-left px-4 py-2.5 rounded-md transition-colors text-sm font-medium relative ${
         isActive ? "bg-black text-white" : "text-gray-900 hover:bg-gray-100"
       }`}
