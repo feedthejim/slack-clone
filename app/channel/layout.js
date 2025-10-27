@@ -39,8 +39,27 @@ function SidebarShell({ children, user, startMessageInjection = false }) {
       {children}
 
       {/* Dynamic client-side sections */}
-      <MessageProgressIndicator />
-      <RecentMessages />
+      <Suspense fallback={
+        <div className="px-4 py-3 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-semibold text-gray-900">Next Message</h4>
+            <span className="text-xs text-gray-600">Loading...</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-1.5">
+            <div className="bg-gray-300 h-1.5 rounded-full w-0" />
+          </div>
+        </div>
+      }>
+        <MessageProgressIndicator />
+      </Suspense>
+      <Suspense fallback={
+        <div className="px-4 py-3 border-t border-gray-200">
+          <h4 className="text-xs font-semibold text-gray-900 mb-2">Recent Messages</h4>
+          <div className="text-xs text-gray-500">Loading...</div>
+        </div>
+      }>
+        <RecentMessages />
+      </Suspense>
 
       <div className="px-4 py-3 border-t border-gray-200">
         <div className="text-xs text-gray-600 bg-gray-50 rounded-md p-2">

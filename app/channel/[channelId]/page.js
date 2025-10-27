@@ -158,7 +158,6 @@ async function MessageInputWithData({ channelId }) {
   return <MessageInput channelId={channelId} />;
 }
 
-export async function generateStaticParams() {
-  return validChannelIds.map((channelId) => ({ channelId }));
-}
-
+// export async function generateStaticParams() {
+//   return validChannelIds.map((channelId) => ({ channelId }));
+// }

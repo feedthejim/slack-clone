@@ -1,17 +1,38 @@
 "use client";
 
 import { useMessageProgress, useRecentMessages } from "./hooks";
+import { useState, useEffect } from "react";
 
 // Client-side progress indicator
 export function MessageProgressIndicator() {
   const progress = useMessageProgress();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Show glimmer state until mounted
+  if (!mounted) {
+    return (
+      <div className="px-4 py-3 border-t border-gray-200">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-xs font-semibold text-gray-900">Next Message</h4>
+          <div className="w-12 h-3 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-1.5">
+          <div className="bg-gray-300 h-1.5 rounded-full w-0" />
+        </div>
+      </div>
+    );
+  }
 
   if (!progress.isActive) {
     return (
       <div className="px-4 py-3 border-t border-gray-200">
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-xs font-semibold text-gray-900">Next Message</h4>
-          <span className="text-xs text-gray-600">Initializing...</span>
+          <span className="text-xs text-gray-600">Starting...</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-1.5">
           <div className="bg-gray-300 h-1.5 rounded-full w-0" />
@@ -36,9 +57,35 @@ export function MessageProgressIndicator() {
   );
 }
 
-// Client-side recent messages
+// Client-side recent messages  
 export function RecentMessages() {
   const recentMessages = useRecentMessages();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Show glimmer state until mounted
+  if (!mounted) {
+    return (
+      <div className="px-4 py-3 border-t border-gray-200">
+        <h4 className="text-xs font-semibold text-gray-900 mb-3">Recent Messages</h4>
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="animate-pulse">
+              <div className="flex items-center space-x-1 mb-1">
+                <div className="w-12 h-3 bg-gray-200 rounded"></div>
+                <div className="w-4 h-3 bg-gray-150 rounded"></div>
+                <div className="w-16 h-3 bg-gray-200 rounded"></div>
+              </div>
+              <div className="w-3/4 h-3 bg-gray-200 rounded"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (recentMessages.length === 0) {
     return (
