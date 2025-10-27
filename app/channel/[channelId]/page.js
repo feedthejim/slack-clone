@@ -75,7 +75,9 @@ async function ChannelHeader({ channelId }) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-black flex items-center">
-            <span className="mr-3 text-gray-500">{channel.isPrivate ? "🔒" : "#"}</span>
+            <span className="mr-3 text-gray-500">
+              {channel.isPrivate ? "🔒" : "#"}
+            </span>
             {channel.name}
           </h2>
           <p className="text-sm text-gray-600 mt-1">
@@ -124,7 +126,7 @@ async function MessageListWithParams({ params }) {
 
 // Messages component that prefetches and reads user data
 async function MessageListWithData({ channelId }) {
-  "use cache: private";
+  "use cache";
   const queryClient = getQueryClient();
 
   // Prefetch messages data - no await needed
@@ -159,3 +161,4 @@ async function MessageInputWithData({ channelId }) {
 export async function generateStaticParams() {
   return validChannelIds.map((channelId) => ({ channelId }));
 }
+

@@ -1,62 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useMessages, useSendMessage, useChannels } from "./hooks";
+import { useState } from "react";
+import { useParams } from "next/navigation";
+import { useMessages, useSendMessage, useChannels, useGlobalMessageInjection, useRecentMessages, useMessageProgress, useChannelNewMessages } from "./hooks";
 import { logoutAction } from "./actions";
-import { PrefetchKind } from "next/dist/client/components/router-reducer/router-reducer-types";
 
-// Cookie utilities
-function getCookie(name) {
-  if (typeof document === "undefined") return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(";").shift();
-  return null;
-}
-
-function setCookie(name, value, days = 365) {
-  if (typeof document === "undefined") return;
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
-}
-
-// Prefetch modes
-const PREFETCH_MODES = {
-  RUNTIME: "runtime",
-  HOVER: "hover",
-  OFF: "off",
-};
-
-// Hook to get current prefetch mode
-export function usePrefetchMode() {
-  const [prefetchMode, setPrefetchMode] = useState(() => {
-    const prefetchCookie = getCookie("prefetch-mode");
-    return prefetchCookie || PREFETCH_MODES.RUNTIME;
-  });
-
-  useEffect(() => {
-    const checkCookie = () => {
-      const prefetchCookie = getCookie("prefetch-mode");
-      setPrefetchMode(prefetchCookie || PREFETCH_MODES.RUNTIME);
-    };
-
-    checkCookie();
-    const interval = setInterval(checkCookie, 100);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return prefetchMode;
-}
-
-// Backwards compatibility hook
-export function usePrefetchState() {
-  const mode = usePrefetchMode();
-  return mode !== PREFETCH_MODES.OFF;
-}
 
 // Message List Component using React Query
 export function MessageList({ channelId }) {
@@ -132,65 +81,20 @@ export function MessageInput({ channelId }) {
 // Message List Skeleton Component
 export function MessageListSkeleton() {
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
-      {[...Array(5)].map((_, i) => (
-        <div key={i} className="flex space-x-3">
-          <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center space-x-2">
-              <div className="w-20 h-4 bg-gray-200 rounded animate-pulse"></div>
-              <div className="w-16 h-3 bg-gray-150 rounded animate-pulse"></div>
-            </div>
-            <div className="w-3/4 h-4 bg-gray-200 rounded animate-pulse"></div>
-            {i % 3 === 0 && (
-              <div className="w-1/2 h-4 bg-gray-200 rounded animate-pulse"></div>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// Performance Debug Component
-export function PerformanceDebug() {
-  const delays = [
-    { name: "Channels List", time: "500ms", type: "sidebar" },
-    { name: "Channel Header", time: "2s", type: "header" },
-    { name: "Messages", time: "3s", type: "messages" },
-    { name: "User Auth", time: "200ms", type: "input" },
-    { name: "Send Message", time: "300ms", type: "action" },
-  ];
-
-  return (
-    <div className="px-4 py-2 border-t border-gray-700">
-      <h4 className="text-xs font-semibold text-gray-900 mb-3">API Delays</h4>
-      <div className="space-y-2">
-        {delays.map((delay) => (
-          <div
-            key={delay.name}
-            className="flex justify-between items-center text-xs"
-          >
-            <span className="text-gray-900 truncate font-medium">
-              {delay.name}
-            </span>
-            <div className="flex items-center space-x-2">
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  delay.type === "sidebar"
-                    ? "bg-green-500"
-                    : delay.type === "header"
-                    ? "bg-yellow-500"
-                    : delay.type === "messages"
-                    ? "bg-red-500"
-                    : delay.type === "input"
-                    ? "bg-blue-500"
-                    : "bg-purple-500"
-                }`}
-              ></span>
-              <span className="text-gray-900 font-mono font-semibold">
-                {delay.time}
-              </span>
+    <div className="flex-1 overflow-y-auto p-6 flex flex-col justify-end">
+      <div className="space-y-6 min-h-full flex flex-col justify-end">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex space-x-3">
+            <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-20 h-4 bg-gray-200 rounded animate-pulse"></div>
+                <div className="w-16 h-3 bg-gray-150 rounded animate-pulse"></div>
+              </div>
+              <div className="w-3/4 h-4 bg-gray-200 rounded animate-pulse"></div>
+              {i % 3 === 0 && (
+                <div className="w-1/2 h-4 bg-gray-200 rounded animate-pulse"></div>
+              )}
             </div>
           </div>
         ))}
@@ -199,140 +103,26 @@ export function PerformanceDebug() {
   );
 }
 
-// Prefetch Toggle Component
-export function PrefetchToggle() {
-  const [prefetchMode, setPrefetchMode] = useState(PREFETCH_MODES.RUNTIME);
-  const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    const prefetchCookie = getCookie("prefetch-mode");
-    setPrefetchMode(prefetchCookie || PREFETCH_MODES.RUNTIME);
-  }, []);
 
-  const selectMode = (mode) => {
-    setPrefetchMode(mode);
-    setCookie("prefetch-mode", mode);
-    setIsOpen(false);
-  };
-
-  const getModeDisplay = (mode) => {
-    switch (mode) {
-      case PREFETCH_MODES.RUNTIME:
-        return {
-          text: "Runtime",
-          color: "bg-green-500",
-          description: "Immediate prefetch",
-        };
-      case PREFETCH_MODES.HOVER:
-        return {
-          text: "On Hover",
-          color: "bg-yellow-500",
-          description: "Prefetch on mouse hover",
-        };
-      case PREFETCH_MODES.OFF:
-        return {
-          text: "Off",
-          color: "bg-red-500",
-          description: "No prefetching",
-        };
-      default:
-        return {
-          text: "Runtime",
-          color: "bg-green-500",
-          description: "Immediate prefetch",
-        };
-    }
-  };
-
-  if (!mounted) {
-    return (
-      <div className="px-4 py-3 border-t border-gray-200">
-        <div className="flex items-center space-x-2 text-xs text-gray-700">
-          <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-          <span className="font-medium">Prefetch Messages: Loading...</span>
-        </div>
-      </div>
-    );
-  }
-
-  const currentMode = getModeDisplay(prefetchMode);
-  const allModes = Object.values(PREFETCH_MODES).map((mode) => ({
-    value: mode,
-    ...getModeDisplay(mode),
-  }));
-
-  return (
-    <div className="px-4 py-3 border-t border-gray-200">
-      <div className="text-xs font-medium text-gray-700 mb-2">
-        Prefetch Messages
-      </div>
-      <div className="relative">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md text-xs hover:bg-gray-50 transition-colors"
-        >
-          <div className="flex items-center space-x-2">
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${currentMode.color}`}
-            ></span>
-            <span className="font-medium text-gray-900">
-              {currentMode.text}
-            </span>
-          </div>
-          <span className="text-gray-500">{isOpen ? "▲" : "▼"}</span>
-        </button>
-
-        {isOpen && (
-          <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-300 rounded-md shadow-lg z-10">
-            {allModes.map((mode) => (
-              <button
-                key={mode.value}
-                onClick={() => selectMode(mode.value)}
-                className={`w-full flex items-center space-x-2 px-3 py-2 text-xs hover:bg-gray-50 transition-colors first:rounded-t-md last:rounded-b-md ${
-                  mode.value === prefetchMode ? "bg-gray-100" : ""
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${mode.color}`}
-                ></span>
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-gray-900">{mode.text}</div>
-                  <div className="text-gray-600 text-xs">
-                    {mode.description}
-                  </div>
-                </div>
-                {mode.value === prefetchMode && (
-                  <span className="text-green-600 text-xs">✓</span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Channel List Component
+// Channel List Component with ordering by latest messages
 export function ChannelList() {
-  const prefetchMode = usePrefetchMode();
   const { data: channels = [] } = useChannels();
   const { channelId: activeChannelId } = useParams();
+  const recentMessages = useRecentMessages();
 
-  const getModeDisplay = (mode) => {
-    switch (mode) {
-      case PREFETCH_MODES.RUNTIME:
-        return "Runtime Prefetch";
-      case PREFETCH_MODES.HOVER:
-        return "Hover Prefetch";
-      case PREFETCH_MODES.OFF:
-        return "No Prefetch";
-      default:
-        return "Runtime Prefetch";
-    }
+  // Get latest message timestamp for each channel
+  const getChannelLastActivity = (channelId) => {
+    const channelMessage = recentMessages.find(msg => msg.channelId === channelId);
+    return channelMessage ? new Date(channelMessage.timestamp).getTime() : 0;
   };
+
+  // Sort channels by latest activity
+  const sortedChannels = [...channels].sort((a, b) => {
+    const aActivity = getChannelLastActivity(a.id);
+    const bActivity = getChannelLastActivity(b.id);
+    return bActivity - aActivity; // Most recent first
+  });
 
   return (
     <div>
@@ -340,13 +130,11 @@ export function ChannelList() {
         Channels
       </h3>
       <ul className="space-y-1">
-        {channels?.map((channel) => (
+        {sortedChannels?.map((channel) => (
           <li key={channel.id}>
             <ChannelLink
               channel={channel}
-              prefetchMode={prefetchMode}
               isActive={activeChannelId?.[0] === channel.id}
-              getModeDisplay={getModeDisplay}
             />
           </li>
         ))}
@@ -355,43 +143,25 @@ export function ChannelList() {
   );
 }
 
-// Individual Channel Link Component with prefetch handling
-function ChannelLink({ channel, prefetchMode, isActive, getModeDisplay }) {
-  const router = useRouter();
-  const [isPrefetched, setIsPrefetched] = useState(false);
-
-  const handleMouseEnter = () => {
-    if (prefetchMode === PREFETCH_MODES.HOVER && !isPrefetched) {
-      router.prefetch(`/channel/${channel.id}`);
-      setIsPrefetched(true);
-    }
-  };
-
-  const getPrefetchProps = () => {
-    switch (prefetchMode) {
-      case PREFETCH_MODES.RUNTIME:
-        return { prefetch: true };
-      case PREFETCH_MODES.HOVER:
-      case PREFETCH_MODES.OFF:
-      default:
-        return {};
-    }
-  };
-
+// Individual Channel Link Component
+function ChannelLink({ channel, isActive }) {
+  const hasNewMessages = useChannelNewMessages(channel.id);
+  
   return (
     <Link
       href={`/channel/${channel.id}`}
-      {...getPrefetchProps()}
-      onMouseEnter={handleMouseEnter}
-      className={`block w-full text-left px-4 py-2.5 rounded-md transition-colors text-sm font-medium ${
+      className={`block w-full text-left px-4 py-2.5 rounded-md transition-colors text-sm font-medium relative ${
         isActive ? "bg-black text-white" : "text-gray-900 hover:bg-gray-100"
       }`}
-      title={`${channel.description} (${getModeDisplay(prefetchMode)})`}
+      title={channel.description}
     >
       <span className="mr-2 text-gray-600">
         {channel.isPrivate ? "🔒" : "#"}
       </span>
       {channel.name}
+      {hasNewMessages && !isActive && (
+        <span className="absolute right-2 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full"></span>
+      )}
     </Link>
   );
 }
@@ -436,6 +206,74 @@ function LogoutForm() {
   );
 }
 
+// Message Progress Indicator Component
+function MessageProgressIndicator() {
+  const progress = useMessageProgress();
+
+  if (!progress.isActive) {
+    return null;
+  }
+
+  return (
+    <div className="px-4 py-3 border-t border-gray-200">
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-xs font-semibold text-gray-900">Next Message</h4>
+        <span className="text-xs text-gray-600">{progress.nextMessageIn}s</span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-1.5">
+        <div 
+          className="bg-green-500 h-1.5 rounded-full transition-all duration-100 ease-linear"
+          style={{ width: `${progress.progress}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Recent Messages Component
+function RecentMessages() {
+  const recentMessages = useRecentMessages();
+  const { data: channels = [] } = useChannels();
+  
+  const getChannelName = (channelId) => {
+    const channel = channels.find(c => c.id === channelId);
+    return channel ? channel.name : `channel-${channelId}`;
+  };
+
+  if (recentMessages.length === 0) {
+    return (
+      <div className="px-4 py-3 border-t border-gray-200">
+        <h4 className="text-xs font-semibold text-gray-900 mb-2">Recent Messages</h4>
+        <div className="text-xs text-gray-500">No recent messages</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-3 border-t border-gray-200">
+      <h4 className="text-xs font-semibold text-gray-900 mb-3">Recent Messages</h4>
+      <div className="space-y-2 max-h-32 overflow-y-auto">
+        {recentMessages.slice(0, 5).map((message) => (
+          <div key={`${message.id}-${message.channelId}`} className="text-xs">
+            <div className="flex items-center space-x-1 mb-1">
+              <span className="font-medium text-gray-900 truncate max-w-20">
+                {message.user.split(' ')[0]}
+              </span>
+              <span className="text-gray-500">in</span>
+              <span className="text-gray-700 font-medium">
+                #{getChannelName(message.channelId)}
+              </span>
+            </div>
+            <div className="text-gray-600 line-clamp-2 leading-relaxed">
+              {message.text}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Demo Disclaimer Component
 function DemoDisclaimer() {
   return (
@@ -443,36 +281,29 @@ function DemoDisclaimer() {
       <div className="text-xs text-gray-600 bg-gray-50 rounded-md p-2">
         <div className="flex items-center space-x-2 mb-1">
           <span className="text-blue-500">ⓘ</span>
-          <span className="font-medium text-gray-700">Demo Info</span>
+          <span className="font-medium text-gray-700">Architecture Overview</span>
         </div>
+        <p className="text-gray-600 leading-relaxed mb-2">
+          This demo showcases <strong>PPR</strong> with Cache Components and{" "}
+          <strong>hybrid data architecture</strong>. Initial data (channels, messages, user)
+          is seeded by <strong>Server Components</strong> using <code>prefetchQuery</code>,
+          then hydrated to <strong>TanStack Query</strong> for client-side state management.
+        </p>
         <p className="text-gray-600 leading-relaxed">
-          This demo showcases <strong>PPR</strong> with Cache Components. Only{" "}
-          <strong>chat messages</strong> are dynamic - other content is cached
-          for optimal performance with partial prerendering. All data is fetched
-          with <strong>Server Components</strong> preloading and <strong>TanStack Query</strong>.
+          <strong>Real-time simulation</strong> injects messages every 5-15 seconds,
+          updating React Query cache directly for instant UI updates and optimistic UX.
+          This combines server-side performance with client-side reactivity.
         </p>
       </div>
     </div>
   );
 }
 
-// Sidebar Component
+// Sidebar Component - now only renders dynamic content
 export function Sidebar({ user }) {
   return (
-    <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col">
-      <div className="p-4 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-black">Chat</h1>
-        <p className="text-sm text-gray-500">workspace.vercel.app</p>
-      </div>
-
-      <div className="flex-1 p-2">
-        <ChannelList />
-      </div>
-
-      <DemoDisclaimer />
-      <PerformanceDebug />
-      <PrefetchToggle />
-      <LogoutButton user={user} />
+    <div className="flex-1 p-2">
+      <ChannelList />
     </div>
   );
 }
