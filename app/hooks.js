@@ -21,9 +21,28 @@ export function useChannels() {
 
 // Messages query
 export function useMessages(channelId) {
+  const queryClient = useQueryClient();
+  
   return useSuspenseQuery({
     queryKey: queryKeys.messages(channelId),
     queryFn: () => mockApi.getMessages(channelId),
+    select: (data) => {
+      // When server data loads, merge with any pending injected messages
+      const pending = pendingInjectedMessages.get(channelId) || [];
+      if (pending.length > 0) {
+        pendingInjectedMessages.delete(channelId); // Clear pending since we're merging
+        
+        const allMessages = [...data, ...pending];
+        const uniqueMessages = allMessages.filter((msg, index, arr) => 
+          arr.findIndex(m => m.id === msg.id) === index
+        );
+        
+        return uniqueMessages.sort((a, b) => 
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+      }
+      return data;
+    }
   });
 }
 
@@ -87,13 +106,14 @@ const pendingInjectedMessages = new Map(); // channelId -> Message[]
 // Unified function to safely add messages to cache with race condition handling
 function safelyAddMessageToCache(queryClient, channelId, newMessage) {
   queryClient.setQueryData(queryKeys.messages(channelId), (old) => {
-    // If no server data yet, store in pending and return just the new message
+    // If no server data yet, just store in pending - don't return anything
+    // This allows prefetchQuery to still run and fetch server data
     if (!old) {
       if (!pendingInjectedMessages.has(channelId)) {
         pendingInjectedMessages.set(channelId, []);
       }
       pendingInjectedMessages.get(channelId).push(newMessage);
-      return [newMessage];
+      return old; // Return undefined to keep cache empty
     }
     
     // If we have server data, merge any pending messages and add the new one
