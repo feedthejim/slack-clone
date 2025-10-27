@@ -1,24 +1,35 @@
 # Slack Clone
 
-A modern Slack-inspired chat application built with Next.js 15, React, and Tailwind CSS.
+A modern Slack-inspired chat application showcasing **Partial Prerendering (PPR)** with **Cache Components** and real-time message simulation. Built with Next.js 16, React 19, and TanStack Query.
 
 ## Features
 
-- **Real-time messaging** - Send and receive messages in different channels
-- **Channel navigation** - Browse between multiple channels (general, random, dev-team, design, marketing)
-- **Responsive design** - Clean, modern UI that works on all devices
-- **Server-side rendering** - Fast initial page loads with Next.js App Router
-- **Mock data** - Includes sample channels and messages for demonstration
+### Real-time Experience
+- **Live message injection** - Messages appear every 5-15 seconds across all channels with realistic users and content
+- **Progress indicator** - Visual countdown showing when the next message will arrive
+- **Recent messages feed** - Live sidebar showing latest activity across all channels
+- **Channel activity indicators** - Green dots show channels with new unread messages
+- **Smart channel ordering** - Channels automatically reorder by latest activity
+
+### Modern Architecture
+- **Partial Prerendering (PPR)** - Static content loads instantly, dynamic content streams in
+- **Cache Components** - Server Components with `"use cache"` for optimal performance
+- **Hybrid data architecture** - Server Components seed data, TanStack Query manages client state
+- **Suspense boundaries** - Granular loading states with skeleton components
+- **Real-time state management** - Global message injection works across navigation
+
+### User Experience  
 - **Optimistic updates** - Instant UI feedback when sending messages
-- **Loading states** - Skeleton components for better UX
-- **Prefetch controls** - Runtime toggle for link prefetching
+- **Responsive design** - Clean, modern UI that works on all devices
+- **Smart loading states** - Progressive enhancement with proper glimmers
+- **Instant feedback** - Unread indicators dismiss immediately on click
 
 ## Tech Stack
 
-- **Next.js 15** - React framework with App Router
-- **React 18** - UI library with Suspense and modern features
+- **Next.js 16** - React framework with PPR and Cache Components
+- **React 19** - UI library with enhanced Suspense and concurrent features
+- **TanStack Query** - Powerful data fetching and caching
 - **Tailwind CSS** - Utility-first CSS framework
-- **React Query** - Data fetching and caching (experimental Next.js integration)
 
 ## Getting Started
 
