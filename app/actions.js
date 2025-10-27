@@ -1,14 +1,14 @@
-'use server';
+"use server";
 
-import { clearAuthCookie, setAuthCookie } from './auth';
-import { redirect } from 'next/navigation';
+import { clearAuthCookie, setAuthCookie } from "./auth";
+import { redirect } from "next/navigation";
 
 export async function logoutAction() {
   await clearAuthCookie();
-  redirect('/login');
+  redirect("/login");
 }
 
 export async function loginAction() {
   await setAuthCookie();
-  redirect('/channel/1');
+  redirect("/channel/1");
 }

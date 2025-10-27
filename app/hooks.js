@@ -8,9 +8,7 @@ import { mockApi } from './lib';
 // Query keys
 export const queryKeys = {
   channels: ['channels'],
-  channel: (channelId) => ['channel', channelId],
   messages: (channelId) => ['messages', channelId],
-  user: ['user'],
 };
 
 // Channels query
@@ -29,13 +27,6 @@ export function useMessages(channelId) {
   });
 }
 
-// User query
-export function useCurrentUser() {
-  return useSuspenseQuery({
-    queryKey: queryKeys.user,
-    queryFn: mockApi.getCurrentUser,
-  });
-}
 
 // Fake message generation data
 const fakeUsers = [
@@ -295,10 +286,6 @@ export function useGlobalMessageInjection(enabled = true) {
   }, [enabled, queryClient]);
 }
 
-// Legacy hook for backward compatibility - now does nothing
-export function useMessageInjection(channelId, enabled = true) {
-  // This hook is now a no-op since injection happens globally
-}
 
 // Send message mutation
 export function useSendMessage(channelId) {
