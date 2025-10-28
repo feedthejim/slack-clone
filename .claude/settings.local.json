@@ -13,7 +13,9 @@
       "Bash(cat:*)",
       "Bash(npm run dev:*)",
       "mcp__next-devtools__browser_eval",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(pnpm dev:*)",
+      "mcp__next-devtools__nextjs_runtime"
     ],
     "deny": []
   }

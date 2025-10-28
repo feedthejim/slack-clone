@@ -16,7 +16,7 @@ import {
 import { logoutAction } from "./actions";
 
 // Message List Component using React Query with Optimistic Updates
-export function MessageList({ channelId, optimisticMessages }) {
+export function MessageList({ channelId, optimisticMessages = [] }) {
   const { data: messages = [] } = useMessages(channelId);
   
   // Combine server messages with optimistic messages
